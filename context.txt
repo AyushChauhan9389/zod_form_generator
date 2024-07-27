@@ -1,0 +1,52 @@
+Project: Zod Form Generator
+
+Description:
+This project is a form generator that creates Next.js components with server-side actions using Zod for schema validation, React Hook Form for form state management, and Shadcn UI for styling. It uses the next-safe-action library to create type-safe server actions.
+
+Key Components:
+1. safe_action_form_generator.py: The main Python script that generates the TypeScript/React components.
+2. Generated Files:
+   a. {form_name}_server_actions.ts: Contains the server-side action logic.
+   b. {form_name}_form.tsx: The React component for the form.
+
+Technologies Used:
+- Next.js
+- React
+- TypeScript
+- Zod (for schema validation)
+- next-safe-action (for type-safe server actions)
+- React Hook Form (for form state management)
+- Shadcn UI (for UI components and styling)
+- Streamlit (for the form generator interface)
+
+Key Features:
+1. Type-safe form generation with Zod schemas
+2. Server-side actions using next-safe-action
+3. Client-side form handling with React Hook Form
+4. Styled components using Shadcn UI
+5. Toast notifications for form submission feedback
+6. Error handling for both client and server-side validation
+
+File Structure:
+zod_form_generator/
+- safe_action_form_generator.py
+- utils.py (contains helper functions like generate_zod_schema)
+- requirements.txt
+- Generated files:
+  - {form_name}_server_actions.ts
+  - {form_name}_form.tsx
+
+Usage:
+1. Run the Streamlit app (safe_action_form_generator.py)
+2. Enter the form name and define fields
+3. Generate the Next.js Safe Action Form
+4. Review the generated TypeScript files
+5. Save the files to use in a Next.js project
+
+Note: The generated components assume the existence of a Shadcn UI setup in the Next.js project. Users may need to adjust import paths or install necessary dependencies in their Next.js project.
+
+Future Improvements:
+1. Add more field types and customization options
+2. Generate a complete Next.js project structure
+3. Include options for different styling libraries
+4. Add unit test generation for the created components
