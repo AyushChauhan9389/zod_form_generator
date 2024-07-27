@@ -1,11 +1,10 @@
 import json
+from typing import List, Tuple
 
-def generate_zod_schema(schema_type, fields=None, item_type=None):
+def generate_zod_schema(schema_type: str, fields: List[Tuple[str, str]] = None, item_type: str = None) -> str:
     if schema_type == "object" and fields:
-        schema = "z.object({\n"
-        for field_name, field_type in fields:
-            schema += f"  {field_name}: z.{field_type}(),\n"
-        schema += "})"
+        schema_parts = [f"  {field_name}: z.{field_type}()," for field_name, field_type in fields]
+        schema = "z.object({\n" + "\n".join(schema_parts) + "\n})"
     elif schema_type == "array" and item_type:
         schema = f"z.array(z.{item_type}())"
     else:
@@ -13,33 +12,35 @@ def generate_zod_schema(schema_type, fields=None, item_type=None):
     
     return f"import {{ z }} from 'zod';\n\nconst schema = {schema};"
 
-def generate_shadcn_form(form_name, fields, use_zod):
-    form_fields = ""
+def generate_shadcn_form(form_name: str, fields: List[Tuple[str, str]], use_zod: bool) -> str:
+    form_fields = []
     for field_name, field_type in fields:
         if field_type == "text":
-            form_fields += f'''
+            form_fields.append(f'''
   <FormField
-    control={{{{form.control}}}}
+    control={{form.control}}
     name="{field_name}"
-    render={{{{ {{{{field}}}} => (
+    render={{{{ field }} => (
       <FormItem>
         <FormLabel>{field_name.capitalize()}</FormLabel>
         <FormControl>
-          <Input {{{{...field}}}} />
+          <Input {{...field}} />
         </FormControl>
         <FormMessage />
       </FormItem>
-    )}}}}
+    )}}
   />
-'''
+''')
         # Add more field types here...
 
     zod_import = "import { z } from 'zod';" if use_zod else ""
     zod_schema = f"""
 const formSchema = z.object({{
-  {", ".join([f"{name}: z.string()" for name, _ in fields])}
+  {", ".join(f"{name}: z.string()" for name, _ in fields)}
 }})
 """ if use_zod else ""
+
+    form_fields_str = "\n".join(form_fields)
 
     return f"""import {{ useForm }} from 'react-hook-form'
 import {{ Button }} from "@/components/ui/button"
@@ -61,7 +62,7 @@ export function {form_name}() {{
   const form = useForm{f"<z.infer<typeof formSchema>>" if use_zod else ""}({{
     {f"resolver: zodResolver(formSchema)," if use_zod else ""}
     defaultValues: {{
-      {", ".join([f"{name}: ''" for name, _ in fields])}
+      {", ".join(f"{name}: ''" for name, _ in fields)}
     }},
   }})
 
@@ -72,7 +73,7 @@ export function {form_name}() {{
   return (
     <Form {{...form}}>
       <form onSubmit={{form.handleSubmit(onSubmit)}} className="space-y-8">
-        {form_fields}
+        {form_fields_str}
         <Button type="submit">Submit</Button>
       </form>
     </Form>
@@ -80,16 +81,16 @@ export function {form_name}() {{
 }}
 """
 
-def generate_server_action(action_name, http_method, params, use_zod):
-    params_list = ", ".join([f"{name}: {type}" for name, type in params])
+def generate_server_action(action_name: str, http_method: str, params: List[Tuple[str, str]], use_zod: bool) -> str:
+    params_list = ", ".join(f"{name}: {type}" for name, type in params)
     zod_schema = f"""
 const inputSchema = z.object({{
-  {", ".join([f"{name}: z.{type}()" for name, type in params])}
+  {", ".join(f"{name}: z.{type}()" for name, type in params)}
 }})
 """ if use_zod else ""
 
     validation_code = f"""
-  const validatedInput = inputSchema.parse({{ {", ".join([name for name, _ in params])} }})
+  const validatedInput = inputSchema.parse({{ {", ".join(name for name, _ in params)} }})
 """ if use_zod else ""
 
     return f"""import {{ z }} from 'zod'
@@ -100,41 +101,40 @@ export async function {action_name}({params_list}) {{
   'use server'
 {validation_code}
   // TODO: Implement your server-side logic here
-  console.log('Received data:', {{ {", ".join([name for name, _ in params])} }})
+  console.log('Received data:', {{ {", ".join(name for name, _ in params)} }})
 
   // Example response
   return {{ success: true, message: 'Data processed successfully' }}
 }}
 """
 
-def generate_safe_action_form(form_name, fields):
-    # Generate Zod schema for form validation
+def generate_safe_action_form(form_name: str, fields: List[Tuple[str, str]]) -> str:
     zod_schema = f"""
 const formSchema = z.object({{
-  {", ".join([f"{name}: z.string()" for name, _ in fields])}
+  {", ".join(f"{name}: z.string()" for name, _ in fields)}
 }})
 """
 
-    # Generate form fields
-    form_fields = ""
-    for field_name, field_type in fields:
-        form_fields += f'''
+    form_fields = []
+    for field_name, _ in fields:
+        form_fields.append(f'''
         <FormField
-          control={{{{form.control}}}}
+          control={{form.control}}
           name="{field_name}"
-          render={{{{ {{{{field}}}} => (
+          render={{{{ field }} => (
             <FormItem>
               <FormLabel>{field_name.capitalize()}</FormLabel>
               <FormControl>
-                <Input {{{{...field}}}} />
+                <Input {{...field}} />
               </FormControl>
               <FormMessage />
             </FormItem>
-          )}}}}
+          )}}
         />
-'''
+''')
 
-    # Generate the complete component with both client and server-side code
+    form_fields_str = "\n".join(form_fields)
+
     return f"""'use client'
 
 import {{ z }} from 'zod'
@@ -165,7 +165,7 @@ export function {form_name}() {{
   const form = useForm<z.infer<typeof formSchema>>({{
     resolver: zodResolver(formSchema),
     defaultValues: {{
-      {", ".join([f"{name}: ''" for name, _ in fields])}
+      {", ".join(f"{name}: ''" for name, _ in fields)}
     }},
   }})
 
@@ -178,13 +178,13 @@ export function {form_name}() {{
   return (
     <Form {{...form}}>
       <form onSubmit={{form.handleSubmit(onSubmit)}} className="space-y-8">
-        {form_fields}
-        <Button type="submit" disabled={{{{status === 'executing'}}}}>
-          {{{{status === 'executing' ? 'Submitting...' : 'Submit'}}}}
+        {form_fields_str}
+        <Button type="submit" disabled={{status === 'executing'}}>
+          {{status === 'executing' ? 'Submitting...' : 'Submit'}}
         </Button>
-        {{{{result && result.data && (
-          <p className="mt-4 text-green-600">{{{{result.data.message}}}}</p>
-        )}}}}
+        {{result && result.data && (
+          <p className="mt-4 text-green-600">{{result.data.message}}</p>
+        )}}
       </form>
     </Form>
   )
